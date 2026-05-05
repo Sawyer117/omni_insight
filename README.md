@@ -14,15 +14,25 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 
 ```
 .
-├── deck.js                                    # pptxgenjs source (re-runnable)
-├── Omni_PostTraining_Insight_2026.pptx        # 8-slide deck (built)
+├── deck.js                                          # Insight deck source (pptxgenjs)
+├── Omni_PostTraining_Insight_2026.pptx              # 8-slide market-insight deck (built)
+├── experiment_plan.js                               # Internal experiment plan source
+├── Omni_Understanding_Experiment_Plan_2026H2.pptx   # 8-slide experiment plan (built)
 ├── analysis/
-│   └── thesis-tree.md                         # Full L0–L5 thesis-tree analysis
+│   └── thesis-tree.md                               # Full L0–L5 thesis-tree analysis
 ├── package.json
 └── README.md
 ```
 
-## Deck structure (8 slides)
+## Two decks, two audiences
+
+### Deck 1 — Market insight (`Omni_PostTraining_Insight_2026.pptx`)
+External-facing white-paper-style analysis of where the omni post-training field stands as of 2026-05. Reads as a CTO briefing.
+
+### Deck 2 — Internal experiment plan (`Omni_Understanding_Experiment_Plan_2026H2.pptx`)
+A concrete, executable plan for **a post-training team that wants to extend an in-progress text-pretraining checkpoint into an omni *understanding* model** (vision/audio/video/text, no generation). Covers pre-arrival prep (T-12 → T), 5-stage SFT pipeline (Nemotron-Lite, ~285B token), 3-stage GSPO RL (skipping Audio-RL and Omni-RL), evaluation red lines, and risk register with 3 go/no-go gates.
+
+## Insight deck structure (8 slides)
 
 | # | Topic | Layout |
 |---|---|---|
@@ -41,12 +51,33 @@ Each slide follows the white-paper-per-slide discipline:
 - Bottom red conclusion box (3 conclusions, each with vendor + number)
 - Sources line with red-underlined institution names
 
-## Reproducing the deck
+## Experiment plan deck structure (8 slides)
+
+| # | Topic | Layout |
+|---|---|---|
+| 1 | Task definition + constraints (in-scope / out-of-scope / assumptions) | A |
+| 2 | Roadmap timeline (T-12 → T → T+24) with 3 swimlanes | swimlane |
+| 3 | Pre-arrival 5 parallel workstreams (data/eval/code/encoder/tokenizer) | C |
+| 4 | Nemotron-Lite SFT recipe (5 stages, skip Stage 6 256K) | D |
+| 5 | Data scale + sources by modality (~285B token target) | A |
+| 6 | Simplified RL stack (3 stages: MPO + Image-RL + Text-RL S2) | C |
+| 7 | Evaluation red lines (8 dimensions, 36 benchmarks) | A |
+| 8 | Risk register + 3 go/no-go gates | A |
+
+### Key plan parameters
+
+- **Total token budget**: ~285B (vs Nemotron 466.9B, saves ~40%)
+- **Total timeline**: ~14.5 weeks post-arrival training (vs Nemotron full stack, saves 4 weeks)
+- **Pre-arrival prep**: 12 weeks, 5 parallel streams, all ckpt-independent
+- **Skipped stages** (with rationale): Stage 6 256K (cost), Text-RL S1 (no multi-env need), Omni-RL (Image-RL + audio benchmarks suffice), Audio-RL (low marginal gain)
+- **Hard red line**: MMLU-Pro drop ≤ 2 pt; if exceeded, immediate rollback or Text-RL S2 repair stage
+
+## Reproducing the decks
 
 ```bash
 npm install
-node deck.js
-# → Omni_PostTraining_Insight_2026.pptx
+node deck.js              # → Omni_PostTraining_Insight_2026.pptx
+node experiment_plan.js   # → Omni_Understanding_Experiment_Plan_2026H2.pptx
 ```
 
 Requires Node ≥ 18.
