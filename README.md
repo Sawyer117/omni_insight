@@ -25,7 +25,8 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 ├── analysis/
 │   └── thesis-tree.md                                   # Full L0–L5 thesis-tree analysis
 ├── tasks/
-│   └── tasks.md                                         # ★ 48 engineering task cards
+│   ├── playbook.md                                      # ★ Lead step-by-step checklist (5-min read)
+│   └── tasks.md                                         # 48 detailed engineering task cards
 ├── package.json
 └── README.md
 ```
@@ -44,8 +45,17 @@ First "Qwen3.5-4B proxy + 10B-A2B target" version. Superseded by v3 — kept for
 ### Deck 4 — Internal experiment plan v3 (`Omni_Understanding_Experiment_Plan_2026H2_v3.pptx`)
 11 slides. Adds method ablation matrix + tokenizer ops flow. Superseded by v4.
 
-### Engineering task breakdown (`tasks/tasks.md`) ★ for engineers
-**48 task cards** for the engineers actually doing the work. Distinct from the v4 deck:
+### Lead playbook (`tasks/playbook.md`) ★ for the lead's own use
+**Step-by-step execution checklist, 5-min read**. Designed for a lead who needs to know "what to do next" without wading through 48 task cards. Includes:
+- **Decision cheat-sheet** at the top (when to use SFT vs OPD vs Specialist KD vs MPO vs GSPO — and why)
+- **Linear flow** through 4 phases: Pre-arrival prep → Phase A (Qwen3.5-4B) → Phase B (real ckpt) SFT → Phase B RL
+- **Per-stage one-liners** with hyperparameters (LR, BS, etc.) directly from Nemotron Table 6
+- **Parallel ablation lane** (A1-A5) marked separately so they don't block the main line
+- **Decision tree** at the bottom: "if you're at step X, do Y next"
+- All methods cite the source paper ([N] / [Q] / [L] shorthand)
+
+### Engineering task breakdown (`tasks/tasks.md`) for engineers
+**48 task cards** for the engineers actually doing the work. Distinct from playbook:
 - **v4 deck** = "why we do this and what we deliver" (for VPs / leads)
 - **tasks.md** = "exactly what to build, with hyperparameters and acceptance criteria" (for engineers)
 
