@@ -14,12 +14,13 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 
 ```
 .
-├── deck.js                                          # Insight deck source (pptxgenjs)
-├── Omni_PostTraining_Insight_2026.pptx              # 8-slide market-insight deck (built)
-├── experiment_plan.js                               # Internal experiment plan source
-├── Omni_Understanding_Experiment_Plan_2026H2.pptx   # 8-slide experiment plan (built)
+├── deck.js                                              # Insight deck source (pptxgenjs)
+├── Omni_PostTraining_Insight_2026.pptx                  # 8-slide market-insight deck
+├── experiment_plan.js                                   # Internal experiment plan v2 source
+├── Omni_Understanding_Experiment_Plan_2026H2.pptx       # v1 (8 slides, generic plan)
+├── Omni_Understanding_Experiment_Plan_2026H2_v2.pptx    # v2 (10 slides, current) ★
 ├── analysis/
-│   └── thesis-tree.md                               # Full L0–L5 thesis-tree analysis
+│   └── thesis-tree.md                                   # Full L0–L5 thesis-tree analysis
 ├── package.json
 └── README.md
 ```
@@ -29,8 +30,17 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 ### Deck 1 — Market insight (`Omni_PostTraining_Insight_2026.pptx`)
 External-facing white-paper-style analysis of where the omni post-training field stands as of 2026-05. Reads as a CTO briefing.
 
-### Deck 2 — Internal experiment plan (`Omni_Understanding_Experiment_Plan_2026H2.pptx`)
-A concrete, executable plan for **a post-training team that wants to extend an in-progress text-pretraining checkpoint into an omni *understanding* model** (vision/audio/video/text, no generation). Covers pre-arrival prep (T-12 → T), 5-stage SFT pipeline (Nemotron-Lite, ~285B token), 3-stage GSPO RL (skipping Audio-RL and Omni-RL), evaluation red lines, and risk register with 3 go/no-go gates.
+### Deck 2 — Internal experiment plan v1 (`Omni_Understanding_Experiment_Plan_2026H2.pptx`)
+First draft of an experiment plan for omni understanding post-training. Superseded by v2 — kept for diff comparison.
+
+### Deck 3 — Internal experiment plan v2 (`Omni_Understanding_Experiment_Plan_2026H2_v2.pptx`) ★ current
+**Concrete plan tailored to a real situation:** in-progress text pretraining (new architecture, ~10B-A2B MoE), need to use Qwen3.5-4B-base as proxy during pre-arrival, swap to real ckpt when ready. Five updates from v1:
+
+1. **Path selection rationale slide added** — explains why Nemotron's discipline is borrowed, why LongCat is ruled out (use-case mismatch), why Qwen3.5 is borrowed only for recipes (API-only + 40M-hour AuT data unreachable)
+2. **Two-phase architecture** — Phase A (Qwen3.5-4B proxy, T-12 → T) trains a working omni model on a stand-in base; Phase B (real ckpt, T → T+18) only swaps the LLM backbone
+3. **Stack changed to HF/FSDP/verl/vLLM** — replaces Megatron-Bridge + NeMo-RL; verl as the RL framework with FSDP + vLLM rollout
+4. **Token budget rescaled to ~200B** — derived from Nemotron's 466.9B × active-params ratio (2/3) × stage-skip factor; explicit derivation slide
+5. **New tokenizer plan slide** — reuse Qwen3.5-4B-base vocabulary (~151K) + add ~25 multimodal special tokens; covers Phase A→B switching protocol (3 cases by tokenizer compatibility)
 
 ## Insight deck structure (8 slides)
 
@@ -51,33 +61,38 @@ Each slide follows the white-paper-per-slide discipline:
 - Bottom red conclusion box (3 conclusions, each with vendor + number)
 - Sources line with red-underlined institution names
 
-## Experiment plan deck structure (8 slides)
+## Experiment plan v2 deck structure (10 slides)
 
 | # | Topic | Layout |
 |---|---|---|
-| 1 | Task definition + constraints (in-scope / out-of-scope / assumptions) | A |
-| 2 | Roadmap timeline (T-12 → T → T+24) with 3 swimlanes | swimlane |
-| 3 | Pre-arrival 5 parallel workstreams (data/eval/code/encoder/tokenizer) | C |
-| 4 | Nemotron-Lite SFT recipe (5 stages, skip Stage 6 256K) | D |
-| 5 | Data scale + sources by modality (~285B token target) | A |
-| 6 | Simplified RL stack (3 stages: MPO + Image-RL + Text-RL S2) | C |
-| 7 | Evaluation red lines (8 dimensions, 36 benchmarks) | A |
-| 8 | Risk register + 3 go/no-go gates | A |
+| 1 | Background + constraints (Qwen3.5-4B proxy, 10B-A2B target, HF/FSDP/verl/vLLM) | A |
+| 2 | **Path selection rationale** — why Nemotron, why not LongCat/Qwen3.5 directly | A |
+| 3 | **Two-phase roadmap** — Phase A (proxy training) + Phase B (ckpt swap) | swimlane |
+| 4 | Phase A deliverable — working omni proxy model in 12 weeks | C |
+| 5 | **Tokenizer plan** — Qwen3.5 vocab + 25 MM special tokens, 3 switching cases | D |
+| 6 | SFT recipe rescaled — ~200B token derivation for 10B-A2B | D |
+| 7 | Data plan — 200B token budget by modality | A |
+| 8 | RL stack — verl + FSDP + vLLM, 3 stages, GSPO with GRPO fallback | C |
+| 9 | Evaluation red lines — 3 phase-gates × 8 dimensions | A |
+| 10 | Risks + ckpt swap SOP — 5 risks, 3 gates, Day-1 swap protocol | A |
 
 ### Key plan parameters
 
-- **Total token budget**: ~285B (vs Nemotron 466.9B, saves ~40%)
-- **Total timeline**: ~14.5 weeks post-arrival training (vs Nemotron full stack, saves 4 weeks)
-- **Pre-arrival prep**: 12 weeks, 5 parallel streams, all ckpt-independent
-- **Skipped stages** (with rationale): Stage 6 256K (cost), Text-RL S1 (no multi-env need), Omni-RL (Image-RL + audio benchmarks suffice), Audio-RL (low marginal gain)
-- **Hard red line**: MMLU-Pro drop ≤ 2 pt; if exceeded, immediate rollback or Text-RL S2 repair stage
+- **Proxy base** (Phase A): Qwen3.5-4B-base (dense), to validate the full pipeline before real ckpt arrives
+- **Real ckpt** (Phase B): MoE ~10B-A2B (new architecture, in-house pretraining)
+- **Token budget**: ~200B (vs Nemotron 466.9B, scaled by active-params ratio + stage skip)
+- **Timeline**: 12 weeks Phase A + 18 weeks Phase B = 30 weeks total
+- **Stack**: HF transformers + FSDP2 + verl + vLLM + VLMEvalKit (no Megatron, no NeMo-RL)
+- **Tokenizer**: reuse Qwen3.5-4B vocab + 25 special tokens; Phase A→B switch protocol covers 3 compatibility cases
+- **Skipped stages** (with rationale): Stage 6 256K, Text-RL S1, Omni-RL, Audio-RL
+- **Hard red line**: MMLU-Pro drop ≤ 2 pt vs base; if exceeded, immediate rollback or Text-RL S2 repair
 
 ## Reproducing the decks
 
 ```bash
 npm install
 node deck.js              # → Omni_PostTraining_Insight_2026.pptx
-node experiment_plan.js   # → Omni_Understanding_Experiment_Plan_2026H2.pptx
+node experiment_plan.js   # → Omni_Understanding_Experiment_Plan_2026H2_v2.pptx
 ```
 
 Requires Node ≥ 18.
