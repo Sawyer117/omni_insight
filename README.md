@@ -14,12 +14,14 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 
 ```
 .
-├── deck.js                                              # Insight deck source (pptxgenjs)
+├── deck.js                                              # Insight deck source
 ├── Omni_PostTraining_Insight_2026.pptx                  # 8-slide market-insight deck
-├── experiment_plan.js                                   # Internal experiment plan v3 source
+├── experiment_plan.js                                   # v3 plan source (kept for diff)
+├── experiment_plan_v4.js                                # v4 plan source ★ current
 ├── Omni_Understanding_Experiment_Plan_2026H2.pptx       # v1 (8 slides, generic)
 ├── Omni_Understanding_Experiment_Plan_2026H2_v2.pptx    # v2 (10 slides, Qwen3.5-4B proxy)
-├── Omni_Understanding_Experiment_Plan_2026H2_v3.pptx    # v3 (11 slides, with ablation) ★
+├── Omni_Understanding_Experiment_Plan_2026H2_v3.pptx    # v3 (11 slides, with ablation)
+├── Omni_Understanding_Experiment_Plan_2026H2_v4.pptx    # v4 (12 slides, framework + dual demo) ★
 ├── analysis/
 │   └── thesis-tree.md                                   # Full L0–L5 thesis-tree analysis
 ├── package.json
@@ -37,8 +39,29 @@ First draft of an experiment plan for omni understanding post-training. Supersed
 ### Deck 3 — Internal experiment plan v2 (`Omni_Understanding_Experiment_Plan_2026H2_v2.pptx`)
 First "Qwen3.5-4B proxy + 10B-A2B target" version. Superseded by v3 — kept for diff.
 
-### Deck 4 — Internal experiment plan v3 (`Omni_Understanding_Experiment_Plan_2026H2_v3.pptx`) ★ current
-**11 slides.** Two corrections from v2 based on team review:
+### Deck 4 — Internal experiment plan v3 (`Omni_Understanding_Experiment_Plan_2026H2_v3.pptx`)
+11 slides. Adds method ablation matrix + tokenizer ops flow. Superseded by v4.
+
+### Deck 5 — Internal experiment plan v4 (`Omni_Understanding_Experiment_Plan_2026H2_v4.pptx`) ★ current
+**12 slides.** Three structural rewrites driven by team-clarified scope:
+
+1. **Project nature reframed: framework + dual demo, not "train a model"**
+   - We are an external algorithm team building an **omni post-training framework** for multiple internal clients (ad-content moderation is the first, but the framework must remain general — UI testing / education / medical imaging clients may follow)
+   - We have no access to client business data. Capability is proven on public benchmarks (against same-size open-source models like Qwen2.5-VL-4B), with **no specific number agreed upfront**
+   - **"Client effort minimization" is a first-class principle** — we absorb more so they absorb less
+
+2. **NEW: Slide 2 framework architecture** — 5-layer modular design (Data / Training / RL / Eval / Deploy), each layer driven by a single yaml. Client workflow target: **`git clone → prepare_data → edit yaml → train → eval/serve`** in under 5 steps
+
+3. **NEW: Slide 12 deliverable + onboarding**
+   - **8 deliverables**: code package, 5 yaml templates, dual demo ckpt, benchmark report, complete docs, demo notebook, serving template, onboarding training
+   - **5-step client onboarding**: T+18 hand-off → W1 read docs/run demo → W2 prep data + sanity SFT → W3-W6 full SFT+RL → ongoing weekly office hours
+   - **R4-NEW added**: framework usability shortfall (30% probability, project-failure-level impact) — mitigation is internal dry-run on 2 mock client scenarios
+
+Other adjustments from v3:
+- **Token budget: 200B → ~170B** (drop GUI-agent / coding-specific data, since clients add their own); active-params × stage-skip × dataset-trim triple-deduction
+- **Stage 5 (48K) confirmed mandatory**: a 60s ad video at 1 fps with EVS+Conv3D compression is empirically 30-50K tokens — 16K cannot hold it (corrected from earlier informal estimate)
+- **Specialist Distillation Hybrid (2T) promoted to main line** (was P1 in v3) — full 5T demoted to P2 since multi-client setting dilutes 5T ROI
+- **Eval line adjusted**: no specific benchmark numbers agreed, target is "match same-size open-source baseline (±2 pt)"; POPE/HallusionBench explicitly added as mandatory (hallucination is core for content moderation + medical clients)
 
 1. **Method ablation matrix added (Slide 3, NEW)** — v2 had a logical hole: ruling out LongCat / Qwen3.5 *as paths* doesn't mean their *methods* are unusable. v3 adds a 9-row × 6-column ablation matrix that systematically catalogues which methods to take (P1 priority), which to ablate (P2/P3), and which to genuinely skip:
    - **P1 (high ROI)**: Qwen3.5 Specialist Distillation (5-teacher full version) — explains why Qwen3.5's text loss is only 0.9 pt
@@ -73,21 +96,22 @@ Each slide follows the white-paper-per-slide discipline:
 - Bottom red conclusion box (3 conclusions, each with vendor + number)
 - Sources line with red-underlined institution names
 
-## Experiment plan v3 deck structure (11 slides)
+## Experiment plan v4 deck structure (12 slides)
 
 | # | Topic | Layout |
 |---|---|---|
-| 1 | Background + constraints (Qwen3.5-4B proxy, 10B-A2B target, HF/FSDP/verl/vLLM) | A |
-| 2 | Path selection rationale — engineering line vs method line distinction | A |
-| 3 | **★ Method ablation matrix** — 9 methods × P1/P2/P3 priority, ROI, eval points | A |
-| 4 | Two-phase roadmap with ablation lanes | swimlane |
-| 5 | Phase A deliverable — working omni proxy + Specialist pre-training kicked off | C |
-| 6 | **Tokenizer 5-step operational flow + 3 switching cases** | D |
-| 7 | SFT recipe rescaled — ~200B token derivation for 10B-A2B | D |
-| 8 | Data plan — 200B token budget by modality | A |
-| 9 | RL stack — verl + FSDP + vLLM, 3 stages, GSPO with GRPO fallback | C |
-| 10 | Evaluation red lines — 3 phase-gates × 8 dimensions + ablation tracking | A |
-| 11 | Risks + ckpt swap SOP — 5 risks, 3 gates, Day-1 swap protocol | A |
+| 1 | v4 task definition — framework + dual demo, multi-client | A |
+| 2 | **★ NEW: Framework 5-layer architecture** — yaml-driven, client workflow | custom |
+| 3 | Path selection rationale | A |
+| 4 | Method ablation matrix — Hybrid 2T promoted to main line | A |
+| 5 | Two-phase roadmap with α/β framework deliverables | swimlane |
+| 6 | Phase A deliverables (5 streams, framework α version) | C |
+| 7 | Tokenizer 5-step operational flow + 3 switching cases | D |
+| 8 | SFT recipe rescaled to ~170B for 10B-A2B | D |
+| 9 | Data plan — 100% public data, 170B token | A |
+| 10 | RL stack — verl + FSDP + vLLM, plug-and-play verifier | C |
+| 11 | Evaluation — same-size open-source baseline ±2 pt, POPE mandatory | A |
+| 12 | **★ NEW: Risks + 8 deliverables + 5-step client onboarding** | A |
 
 ### Key plan parameters
 
@@ -104,8 +128,8 @@ Each slide follows the white-paper-per-slide discipline:
 
 ```bash
 npm install
-node deck.js              # → Omni_PostTraining_Insight_2026.pptx
-node experiment_plan.js   # → Omni_Understanding_Experiment_Plan_2026H2_v3.pptx
+node deck.js                  # → Omni_PostTraining_Insight_2026.pptx
+node experiment_plan_v4.js    # → Omni_Understanding_Experiment_Plan_2026H2_v4.pptx
 ```
 
 Requires Node ≥ 18.
