@@ -16,9 +16,10 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 .
 ├── deck.js                                              # Insight deck source (pptxgenjs)
 ├── Omni_PostTraining_Insight_2026.pptx                  # 8-slide market-insight deck
-├── experiment_plan.js                                   # Internal experiment plan v2 source
-├── Omni_Understanding_Experiment_Plan_2026H2.pptx       # v1 (8 slides, generic plan)
-├── Omni_Understanding_Experiment_Plan_2026H2_v2.pptx    # v2 (10 slides, current) ★
+├── experiment_plan.js                                   # Internal experiment plan v3 source
+├── Omni_Understanding_Experiment_Plan_2026H2.pptx       # v1 (8 slides, generic)
+├── Omni_Understanding_Experiment_Plan_2026H2_v2.pptx    # v2 (10 slides, Qwen3.5-4B proxy)
+├── Omni_Understanding_Experiment_Plan_2026H2_v3.pptx    # v3 (11 slides, with ablation) ★
 ├── analysis/
 │   └── thesis-tree.md                                   # Full L0–L5 thesis-tree analysis
 ├── package.json
@@ -33,14 +34,25 @@ External-facing white-paper-style analysis of where the omni post-training field
 ### Deck 2 — Internal experiment plan v1 (`Omni_Understanding_Experiment_Plan_2026H2.pptx`)
 First draft of an experiment plan for omni understanding post-training. Superseded by v2 — kept for diff comparison.
 
-### Deck 3 — Internal experiment plan v2 (`Omni_Understanding_Experiment_Plan_2026H2_v2.pptx`) ★ current
-**Concrete plan tailored to a real situation:** in-progress text pretraining (new architecture, ~10B-A2B MoE), need to use Qwen3.5-4B-base as proxy during pre-arrival, swap to real ckpt when ready. Five updates from v1:
+### Deck 3 — Internal experiment plan v2 (`Omni_Understanding_Experiment_Plan_2026H2_v2.pptx`)
+First "Qwen3.5-4B proxy + 10B-A2B target" version. Superseded by v3 — kept for diff.
 
-1. **Path selection rationale slide added** — explains why Nemotron's discipline is borrowed, why LongCat is ruled out (use-case mismatch), why Qwen3.5 is borrowed only for recipes (API-only + 40M-hour AuT data unreachable)
-2. **Two-phase architecture** — Phase A (Qwen3.5-4B proxy, T-12 → T) trains a working omni model on a stand-in base; Phase B (real ckpt, T → T+18) only swaps the LLM backbone
-3. **Stack changed to HF/FSDP/verl/vLLM** — replaces Megatron-Bridge + NeMo-RL; verl as the RL framework with FSDP + vLLM rollout
-4. **Token budget rescaled to ~200B** — derived from Nemotron's 466.9B × active-params ratio (2/3) × stage-skip factor; explicit derivation slide
-5. **New tokenizer plan slide** — reuse Qwen3.5-4B-base vocabulary (~151K) + add ~25 multimodal special tokens; covers Phase A→B switching protocol (3 cases by tokenizer compatibility)
+### Deck 4 — Internal experiment plan v3 (`Omni_Understanding_Experiment_Plan_2026H2_v3.pptx`) ★ current
+**11 slides.** Two corrections from v2 based on team review:
+
+1. **Method ablation matrix added (Slide 3, NEW)** — v2 had a logical hole: ruling out LongCat / Qwen3.5 *as paths* doesn't mean their *methods* are unusable. v3 adds a 9-row × 6-column ablation matrix that systematically catalogues which methods to take (P1 priority), which to ablate (P2/P3), and which to genuinely skip:
+   - **P1 (high ROI)**: Qwen3.5 Specialist Distillation (5-teacher full version) — explains why Qwen3.5's text loss is only 0.9 pt
+   - **P1 (main line)**: Qwen3.5 OPD audio-text pairing — already in Stage 4
+   - **P2 (medium ROI)**: LongCat Cluster-based Rebalancing + Modality-Agnostic MoE routing — directly applicable to 10B-A2B
+   - **P3 (incremental)**: LongCat random-delay audio-text training, Qwen3.5 multilingual ratio
+   - **Skip**: AuT (40M-hr data unreachable), ARIA/Talker/Code2Wav/dNaViT (no generation), Hybrid Attn+GDN (architecture-layer decision by pretraining team)
+
+2. **Tokenizer operations rewritten (Slide 6)** — v2 was right about *what* but vague on *how*. v3 spells out the 5-step operational flow:
+   - Step 1: `tokenizer.add_special_tokens(...)` — skip Qwen3.5 already-existing ChatML tokens, only add ~15-18 truly new ones
+   - Step 2: `model.resize_token_embeddings(len(tokenizer), pad_to_multiple_of=256)` — pad to 256 multiple for GPU performance
+   - Step 3: Initialize new token embeddings as mean of semantically-related text tokens (fallback: σ=0.02 random)
+   - Step 4: At Stage 0, freeze LLM but unfreeze [Vision-Proj + the 25 new embedding rows] — protect already-learned semantics
+   - Step 5: Data preprocessing inserts `<|vision_start|> + N×<|image_pad|> + <|vision_end|>` into text streams
 
 ## Insight deck structure (8 slides)
 
@@ -61,20 +73,21 @@ Each slide follows the white-paper-per-slide discipline:
 - Bottom red conclusion box (3 conclusions, each with vendor + number)
 - Sources line with red-underlined institution names
 
-## Experiment plan v2 deck structure (10 slides)
+## Experiment plan v3 deck structure (11 slides)
 
 | # | Topic | Layout |
 |---|---|---|
 | 1 | Background + constraints (Qwen3.5-4B proxy, 10B-A2B target, HF/FSDP/verl/vLLM) | A |
-| 2 | **Path selection rationale** — why Nemotron, why not LongCat/Qwen3.5 directly | A |
-| 3 | **Two-phase roadmap** — Phase A (proxy training) + Phase B (ckpt swap) | swimlane |
-| 4 | Phase A deliverable — working omni proxy model in 12 weeks | C |
-| 5 | **Tokenizer plan** — Qwen3.5 vocab + 25 MM special tokens, 3 switching cases | D |
-| 6 | SFT recipe rescaled — ~200B token derivation for 10B-A2B | D |
-| 7 | Data plan — 200B token budget by modality | A |
-| 8 | RL stack — verl + FSDP + vLLM, 3 stages, GSPO with GRPO fallback | C |
-| 9 | Evaluation red lines — 3 phase-gates × 8 dimensions | A |
-| 10 | Risks + ckpt swap SOP — 5 risks, 3 gates, Day-1 swap protocol | A |
+| 2 | Path selection rationale — engineering line vs method line distinction | A |
+| 3 | **★ Method ablation matrix** — 9 methods × P1/P2/P3 priority, ROI, eval points | A |
+| 4 | Two-phase roadmap with ablation lanes | swimlane |
+| 5 | Phase A deliverable — working omni proxy + Specialist pre-training kicked off | C |
+| 6 | **Tokenizer 5-step operational flow + 3 switching cases** | D |
+| 7 | SFT recipe rescaled — ~200B token derivation for 10B-A2B | D |
+| 8 | Data plan — 200B token budget by modality | A |
+| 9 | RL stack — verl + FSDP + vLLM, 3 stages, GSPO with GRPO fallback | C |
+| 10 | Evaluation red lines — 3 phase-gates × 8 dimensions + ablation tracking | A |
+| 11 | Risks + ckpt swap SOP — 5 risks, 3 gates, Day-1 swap protocol | A |
 
 ### Key plan parameters
 
@@ -92,7 +105,7 @@ Each slide follows the white-paper-per-slide discipline:
 ```bash
 npm install
 node deck.js              # → Omni_PostTraining_Insight_2026.pptx
-node experiment_plan.js   # → Omni_Understanding_Experiment_Plan_2026H2_v2.pptx
+node experiment_plan.js   # → Omni_Understanding_Experiment_Plan_2026H2_v3.pptx
 ```
 
 Requires Node ≥ 18.
