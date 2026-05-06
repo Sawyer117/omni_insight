@@ -24,6 +24,8 @@ A high-density tech-insight deck and supporting thesis-tree analysis on **Omni p
 ├── Omni_Understanding_Experiment_Plan_2026H2_v4.pptx    # v4 (12 slides, framework + dual demo) ★
 ├── analysis/
 │   └── thesis-tree.md                                   # Full L0–L5 thesis-tree analysis
+├── tasks/
+│   └── tasks.md                                         # ★ 48 engineering task cards
 ├── package.json
 └── README.md
 ```
@@ -42,7 +44,34 @@ First "Qwen3.5-4B proxy + 10B-A2B target" version. Superseded by v3 — kept for
 ### Deck 4 — Internal experiment plan v3 (`Omni_Understanding_Experiment_Plan_2026H2_v3.pptx`)
 11 slides. Adds method ablation matrix + tokenizer ops flow. Superseded by v4.
 
-### Deck 5 — Internal experiment plan v4 (`Omni_Understanding_Experiment_Plan_2026H2_v4.pptx`) ★ current
+### Engineering task breakdown (`tasks/tasks.md`) ★ for engineers
+**48 task cards** for the engineers actually doing the work. Distinct from the v4 deck:
+- **v4 deck** = "why we do this and what we deliver" (for VPs / leads)
+- **tasks.md** = "exactly what to build, with hyperparameters and acceptance criteria" (for engineers)
+
+Each task card specifies:
+- Source paper + section/table (every task is anchored to Nemotron / LongCat / Qwen3.5)
+- Type tag: `复用` (direct import) / `复现` (reimplement per paper) / `组合` (combine two papers' methods)
+- Concrete inputs / deliverables / hyperparameters (e.g. Stage 0 LR=1e-3 directly from Nemotron Table 6)
+- Mechanically verifiable acceptance criteria
+
+Task modules:
+- **D / DS** (Data + synthesis, 9 tasks): downloads, OPD pair generation, CoT synthesis, Cluster Rebalancing
+- **F** (Framework code, 6 tasks): HF+FSDP2 trainer, MoE wrap, encoder hot-swap, 5 yaml templates, vLLM model class
+- **I** (Infrastructure, 5 tasks): tokenizer 25 MM tokens, projectors, EVS+Conv3D, context parallel
+- **T** (SFT training, 8 tasks): Stage 0/1/2/3/4/5 + Phase A/B meta-tasks
+- **R** (RL training, 5 tasks): verl integration, GSPO, MPO, Image-RL with verifiers, Text-RL S2
+- **S** (Specialist Distillation, 3 tasks): 35B-A3B teacher labeling, Vision specialist, distillation pipeline
+- **E** (Evaluation, 7 tasks): VLMEvalKit fork, vision/audio/video/omni/text/hallucination eval suites
+- **O** (Deployment, 3 tasks): vLLM serve, Docker+K8s, demo notebook
+- **A** (Ablation, 5 tasks): full 5T Specialist, Cluster Rebalancing, Modality-Agnostic MoE, random delay, language ratio
+
+Key principles enforced in the task list:
+1. **No fabricated methods** — every method must trace to a paper section (see Appendix A method-to-task map)
+2. **Direct hyperparameter reuse** — Nemotron Table 6 values copied verbatim, no "we picked" defaults
+3. **Stack discipline** — Megatron-Bridge / NeMo-RL explicitly forbidden (we use HF + verl); see Appendix C "do-not" list
+
+### Deck 5 — Internal experiment plan v4 (`Omni_Understanding_Experiment_Plan_2026H2_v4.pptx`)
 **12 slides.** Three structural rewrites driven by team-clarified scope:
 
 1. **Project nature reframed: framework + dual demo, not "train a model"**
